@@ -59,7 +59,7 @@ fi
 win_gpg=$(which gpg.exe 2>/dev/null)
 # As a pre-requisite to using YubiKey in WSL, test if the Windows GPG is installed
 if test -n "$win_gpg" && test -f "$win_gpg"; then
-    $DIR_NAME/configure-yubikey    
+    source $DIR_NAME/configure-yubikey    
 else
     echo >&2 "WARNING: WinGPG not found on the path. SSH agent will not be set up."
 fi

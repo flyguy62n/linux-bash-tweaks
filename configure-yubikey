@@ -11,7 +11,6 @@
 echo "Setting up YubiKey SSH and GPG agent sockets for WSL2..."
 
 export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
-echo "SSH_AUTH_SOCK: $SSH_AUTH_SOCK"
 if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
     rm -f "$SSH_AUTH_SOCK"
     wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
