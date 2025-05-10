@@ -16,7 +16,8 @@ export PS1='\[\e]0;\w\a\]\n\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[0m\]\n\$ '
 alias addkey="ssh-add ~/.ssh/randy-putty-private"
 alias clean-build="rm -rf build/ dist/ *.egg-info"  # Useful for cleaning up after building Python projects
 alias l1="ls -1"
-alias putclip="clip.exe" 
+alias putclip="clip.exe"        #An alias to put stuff in the Windows clipboard 
+alias getclip="powershell.exe -command get-clipboard | dos2unix"          #An alias to get stuff from the Windows clipboard
 
 complete -C aws_completer aws
 
