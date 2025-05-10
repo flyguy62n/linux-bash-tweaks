@@ -9,22 +9,23 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 - Handy functions for everyday tasks
 
 ## Usage
-1. Clone this repository:
+Add the following `bash-additions` to the end of your `.bashrc` file:
     ```bash
-    git clone https://github.com/flyhuy62n/linux-bash-tweaks.git
-    ```
-2. Symbolicly link the `bashrc-additions` and `.daily_tasks.d/` items to your `/home/<username>` directory
-    ```bash
-    cd ~
-    ln -s /path/to/bash-additions
-    ln -s /path/to/.daily_tasks.d
-3. Add `bash-additions` to the end of your `.bashrc` file:
-    ```bash
-    echo -e "~/bashrc-additions\ncd ~" >> ~/.bashrc
-    ```
-3. Reload your shell:
-    ```bash
-    source ~/.bashrc
+        # Bootstrap the linux-bash-tweaks repo
+        if [ ! -d ${HOME}/tools/linux-bash-tweaks ]; then
+            echo "Cloning linux-bash-tweaks"
+            mkdir -p ${HOME}/tools && cd ${HOME}/tools
+            git clone https://github.com/flyguy62n/linux-bash-tweaks
+        else
+            echo "Updating linux-bash-tweaks"
+            cd ${HOME}/tools/linux-bash-tweaks
+            git fetch && git reset --hard HEAD && git merge
+            # Make sure the executable bit is set on files in the recently updated directory
+            chmod u+x bashrc-additions configure-yubikey 2>/dev/null    
+        fi
+
+        source ${HOME}/tools/linux-bash-tweaks/bashrc-additions
+        cd ~
     ```
 
 ## Contributions
