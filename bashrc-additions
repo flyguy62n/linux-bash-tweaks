@@ -56,42 +56,13 @@ fi
 ############################################
 # This section sets up the SSH and GPG agent sockets for WSL2
 # It uses socat to create the sockets and wsl2-ssh-pageant.exe to handle the SSH agent
-wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
 win_gpg=$(which gpg.exe 2>/dev/null)
 # As a pre-requisite to using YubiKey in WSL, test if the Windows GPG is installed
 if test -n "$win_gpg" && test -f "$win_gpg"; then
-    # Configure the SSH agent socket
-    # This is the socket that SSH will use to communicate with the YubiKey
-    export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
-    echo "Configuring YubiKey SSH_AUTH_SOCK: $SSH_AUTH_SOCK"
-    if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
-        rm -f "$SSH_AUTH_SOCK"
-        
-        if test -x "$wsl2_ssh_pageant_bin"; then
-            (setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin" >/dev/null 2>&1 &)
-        else
-            echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
-        fi
-    fi
-
-    # Configure the GPG Socket that GPG will use to communicate with the YubiKey
-    export GPG_AGENT_SOCK="$HOME/.gnupg/S.gpg-agent"
-    echo "Configuring YubiKey GPG_AGENT_SOCK: $GPG_AGENT_SOCK"
-    if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
-        rm -rf "$GPG_AGENT_SOCK"
-        config_path="C\:/Users/RandyBartels/AppData/Local/gnupg"
-        if test -x "$wsl2_ssh_pageant_bin"; then
-            (setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin -gpgConfigBasepath ${config_path} -gpg S.gpg-agent" >/dev/null 2>&1 &)
-        else
-            echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
-        fi
-    fi
-    
+    $DIR_NAME/configure-yubikey    
 else
     echo >&2 "WARNING: WinGPG not found on the path. SSH agent will not be set up."
 fi
-
-unset wsl2_ssh_pageant_bin
 
 
 ############################################
