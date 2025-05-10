@@ -21,9 +21,7 @@ if [ ! -d ${HOME}/tools/linux-bash-tweaks ]; then
 else
     echo "Updating linux-bash-tweaks"
     cd ${HOME}/tools/linux-bash-tweaks
-    git fetch && git reset --hard HEAD && git merge
-    # Make sure the executable bit is set on files in the recently updated directory
-    chmod u+x bashrc-additions configure-yubikey 2>/dev/null    
+    git fetch && git reset --hard HEAD && git merge    
 fi
 
 source ${HOME}/tools/linux-bash-tweaks/bashrc-additions
