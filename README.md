@@ -1,15 +1,16 @@
 # Linux Bash Tweaks
 
-This repository contains a collection of `.bashrc` tweaks and customizations to enhance and personalize me Bash environment. These tweaks are designed to improve productivity, streamline workflows, and add useful functionality to me terminal.  Maybe you'll like something in them too.
+This repository contains a collection of `.bashrc` tweaks and customizations to enhance and personalize me Bash environment. These tweaks are designed to improve productivity, streamline workflows, and add useful functionality to my terminal.  Maybe you'll like something in them too.
 
 ## Features
+- Simple activation in `.bashrc` to install and maintain
 - Custom aliases for common commands
 - Enhanced prompt customization
-- Environment variable optimizations
-- Handy functions for everyday tasks
+- Once-daily auto-update of `git clone`d and `pipx`-managed utilities
+- WSL support for YubiKey FIDO tokens in SSH and GPG
 
 ## Usage
-Add the following `bash-additions` to the end of your `.bashrc` file:
+Add the following to the end of your `~/.bashrc` file:
 
 ```bash
 # Bootstrap the linux-bash-tweaks repo
@@ -28,6 +29,10 @@ fi
 source ${HOME}/tools/linux-bash-tweaks/bashrc-additions
 cd ~
 ```
+
+This will make sure that your local copy is always in sync with mine.  That is, if you make any changes locally, the `git fetch && git reset ...` line will throw those changes away the next time you start a new shell session.
+
+If you'd rather add your own content -- maybe add a few of your own 3rd party tools to `.daily_tasks.d/01-update-git-repos` or whatver -- make a fork of my repo, change the `git clone` line above, and have fun with it.
 
 ## Contributions
 Feel free to submit pull requests or open issues to suggest new tweaks or improvements.
