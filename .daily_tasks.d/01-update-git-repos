@@ -1,0 +1,19 @@
+#!/bin/bash
+# This script is intended to be run daily to update git repositories
+
+# Only place the GIT CLONEd tools in the GIT_ITEMS list
+GIT_ITEMS=(testssl.sh)
+for ITEM in ${GIT_ITEMS[*]}; do 
+    echo "################################"
+    echo "##### UPDATING ${ITEM}"
+    echo "################################" 
+    cd ${TOOLS}/${ITEM}
+    git fetch && git reset --hard HEAD && git merge
+    # Set the executable bit on any .py and .sh files in the recently updated tool
+    chmod u+x *.py *.sh 2>/dev/null
+    echo "################################"
+    echo "### FINISHED UPDATING ${ITEM}"
+    echo "################################" 
+    echo ""
+done
+    

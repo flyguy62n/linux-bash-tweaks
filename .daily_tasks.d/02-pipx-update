@@ -1,0 +1,14 @@
+#!/bin/bash
+# This script is intended to be run daily to update pipx-managed packages
+# Check if pipx is installed
+if ! command -v pipx &> /dev/null; then
+    echo "pipx could not be found. Skipping..."
+    exit
+fi
+
+# Upgrade all pipx packages
+echo "################################"
+echo "#### UPDATING PIPX PACKAGES ####"
+echo "################################" 
+
+pipx upgrade-all

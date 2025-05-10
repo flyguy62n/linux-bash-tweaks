@@ -1,0 +1,95 @@
+#Some variables to export to the environment
+export TOOLS="${HOME}/tools"
+export GOPATH=$HOME/.local/go
+export PATH="${HOME}/develop:${TOOLS}/testssl.sh:${TOOLS}/ciscot7:${HOME}/tools/sts-3.2.7:${HOME}/.local/bin:${GOPATH}/bin:${PATH}:${TOOLS}/gitleaks:${TOOLS}/trufflehog"
+alias ls='ls --color=auto'
+export LS_COLORS='di=4:fi=0:ln=31:pi=5:so=5:cd=5:or=40:mi=0:ex=32'
+export PS1='\[\e]0;\w\a\]\n\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[0m\]\n\$ '
+
+# Add your own aliases here
+alias addkey="ssh-add ~/.ssh/randy-putty-private"
+alias clean-build="rm -rf build/ dist/ *.egg-info"  # Useful for cleaning up after building Python projects
+alias l1="ls -1"
+alias putclip="clip.exe" 
+
+complete -C aws_completer aws
+
+###########################################
+######### Run these tasks daily ###########
+###########################################
+
+# Get the current date
+current_date=$(date +%Y-%m-%d)
+marker_file="$HOME/.daily_tasks_done"
+
+# Get the last run date from the marker file (if it exists)
+# If the marker file doesn't exist, send the error to /dev/null
+last_run_date=$(cat $marker_file 2>/dev/null)
+
+# If the last run date is not today, run the tasks
+# You'll need to create a .daily_tasks.d/ folder in your home directory
+# and create an executable shell script in there for each task.
+if [ "$current_date" != "$last_run_date" ]; then
+    run-parts ~/.daily_tasks.d
+    
+    # Create/update the marker file to indicate that the tasks have been run
+    echo "$current_date" > $marker_file
+    echo "Daily tasks completed."
+else
+    echo "Daily tasks have already been run today." 
+fi
+
+############################################
+######### End of daily tasks ###############
+############################################
+
+
+############################################
+########### WSL2 SSH Agent #################
+############################################
+# This section sets up the SSH and GPG agent sockets for WSL2
+# It uses socat to create the sockets and wsl2-ssh-pageant.exe to handle the SSH agent
+wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
+
+# test if the wsl2-ssh-pageant.exe file exists
+if test -f "$wsl2_ssh_pageant_bin"; then
+    # Configure the SSH agent socket
+    # This is the socket that SSH will use to communicate with the YubiKey
+    export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
+    echo "Configuring YubiKey SSH_AUTH_SOCK: $SSH_AUTH_SOCK"
+    if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
+        rm -f "$SSH_AUTH_SOCK"
+        
+        if test -x "$wsl2_ssh_pageant_bin"; then
+            (setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin" >/dev/null 2>&1 &)
+        else
+            echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
+        fi
+    fi
+
+    # Configure the GPG Socket that GPG will use to communicate with the YubiKey
+    export GPG_AGENT_SOCK="$HOME/.gnupg/S.gpg-agent"
+    echo "Configuring YubiKey GPG_AGENT_SOCK: $GPG_AGENT_SOCK"
+    if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
+        rm -rf "$GPG_AGENT_SOCK"
+        config_path="C\:/Users/RandyBartels/AppData/Local/gnupg"
+        if test -x "$wsl2_ssh_pageant_bin"; then
+            (setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin -gpgConfigBasepath ${config_path} -gpg S.gpg-agent" >/dev/null 2>&1 &)
+        else
+            echo >&2 "WARNING: $wsl2_ssh_pageant_bin is not executable."
+        fi
+    fi
+    
+else
+    echo >&2 "WARNING: $wsl2_ssh_pageant_bin not found. SSH agent will not be set up."
+fi
+
+unset wsl2_ssh_pageant_bin
+
+
+############################################
+######### END WSL2 SSH Agent ###############
+############################################
+
+#A little fun... use the fortune and cowsay man pages to sort it out.
+fortune -a | cowsay -f vader
