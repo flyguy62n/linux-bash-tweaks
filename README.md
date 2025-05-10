@@ -11,6 +11,7 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 ## Usage
 Add the following `bash-additions` to the end of your `.bashrc` file:
     ```bash
+    
         # Bootstrap the linux-bash-tweaks repo
         if [ ! -d ${HOME}/tools/linux-bash-tweaks ]; then
             echo "Cloning linux-bash-tweaks"
