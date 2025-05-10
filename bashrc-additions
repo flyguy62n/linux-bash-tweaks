@@ -1,3 +1,9 @@
+#!/bin/bash
+# This is a bash script that sets up the user environment
+# It should be called from the .bashrc file
+
+DIR_NAME=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+
 #Some variables to export to the environment
 export TOOLS="${HOME}/tools"
 export GOPATH=$HOME/.local/go
@@ -30,7 +36,7 @@ last_run_date=$(cat $marker_file 2>/dev/null)
 # You'll need to create a .daily_tasks.d/ folder in your home directory
 # and create an executable shell script in there for each task.
 if [ "$current_date" != "$last_run_date" ]; then
-    run-parts ~/.daily_tasks.d
+    run-parts $DIR_NAME/.daily_tasks.d
     
     # Create/update the marker file to indicate that the tasks have been run
     echo "$current_date" > $marker_file
@@ -50,9 +56,9 @@ fi
 # This section sets up the SSH and GPG agent sockets for WSL2
 # It uses socat to create the sockets and wsl2-ssh-pageant.exe to handle the SSH agent
 wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
-
-# test if the wsl2-ssh-pageant.exe file exists
-if test -f "$wsl2_ssh_pageant_bin"; then
+win_gpg=$(which gpg.exe 2>/dev/null)
+# As a pre-requisite to using YubiKey in WSL, test if the Windows GPG is installed
+if test -n "$win_gpg" && test -f "$win_gpg"; then
     # Configure the SSH agent socket
     # This is the socket that SSH will use to communicate with the YubiKey
     export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
@@ -81,7 +87,7 @@ if test -f "$wsl2_ssh_pageant_bin"; then
     fi
     
 else
-    echo >&2 "WARNING: $wsl2_ssh_pageant_bin not found. SSH agent will not be set up."
+    echo >&2 "WARNING: WinGPG not found on the path. SSH agent will not be set up."
 fi
 
 unset wsl2_ssh_pageant_bin
