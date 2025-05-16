@@ -1,0 +1,26 @@
+#!/bin/bash
+# This script is intended to be run daily to update git repositories
+
+ROOT_DIR="${HOME}/develop"
+if ! test -d "${ROOT_DIR}"; then
+    echo -e "\nDirectory ${ROOT_DIR} does not exist. Exiting."
+    exit 1
+fi
+
+# Prompt the user if they'd like to update the git repositories
+read -p "Update local development Git repos (y/N)? " -n 1 -r -t 10 do_update
+echo -e "\n"
+
+if [[ $do_update =~ ^[Yy] ]]; then
+    echo -e "\nSkipping update of local Git repos."
+
+    for ITEM in $(ls ${ROOT_DIR}); do 
+        echo "################################"
+        echo "##### UPDATING ${ITEM}"
+        echo "################################" 
+        git -C ${ROOT_DIR}/${ITEM}/ pull
+    done
+else
+    echo -e "Skipping update of local Git repos."
+fi
+    
