@@ -10,27 +10,80 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 - WSL support for YubiKey FIDO tokens in SSH and GPG
 
 ## Usage
-Add the following to the end of your `~/.bashrc` file:
+Add the following to the end of your `~/.bashrc` file and restart your Bash session or run `source ~/.bashrc`:
 
 ```bash
-# Bootstrap the linux-bash-tweaks repo
-if [ ! -d ${HOME}/tools/linux-bash-tweaks ]; then
-    echo "Cloning linux-bash-tweaks"
-    mkdir -p ${HOME}/tools && cd ${HOME}/tools
-    git clone https://github.com/flyguy62n/linux-bash-tweaks
+# function to retrieve the latest linux-bash-tweaks release from GitHub
+function get_latest_bash_tweaks() {
+    # Get the latest release from the GitHub API
+    local install_path="${HOME}/tools/linux-bash-tweaks"
+    local latest_release=$(curl -s https://api.github.com/repos/flyguy62n/linux-bash-tweaks/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    local current_version=$(cat ${install_path}/version 2>/dev/null)
+    
+    # Check if the latest release is not empty
+    if [ -z "$latest_release" ]; then
+        echo "Bash Tweaks Error: Unable to retrieve the latest release."
+        return 1
+    fi
+    
+    # Make sure the intall path exists
+    if [ ! -d "$install_path" ]; then
+        mkdir -p "$install_path"
+        if [ $? -ne 0 ]; then
+            echo "Bash Tweaks Error: Unable to create install path: $install_path"
+            return 1
+        fi
+    fi
+
+    if [ "$latest_release" == "$current_version" ]; then
+        echo "Latest Bash Tweaks already installed: $current_version"
+        return 0
+    fi
+
+    # Fetch the latest release from GitHub
+    echo "Fetching latest Bash Tweaks release from GitHub..."
+
+    local fetch_url="$(curl -s https://api.github.com/repos/flyguy62n/linux-bash-tweaks/releases/latest \
+        | grep "tarball_url" \
+        | awk '{ print $2 }' \
+        | sed 's/,$//'       \
+        | sed 's/"//g' )"
+        
+    # Download the latest release
+    curl -s -L "$fetch_url" -o ${install_path}/latest.tar.gz
+    if [ $? -ne 0 ]; then
+        echo "Bash Tweaks Error: Unable to download the latest release: $fetch_url"
+        return 1
+    fi
+
+    # Unzip the latest release
+    tar xzvf ${install_path}/latest.tar.gz --strip-components=1 -C ${install_path}/ 1>/dev/null
+
+    # Update the version marker file
+    echo "$latest_release" > ${install_path}/version
+    
+    # Set the executable bit on any .sh files in the recently updated tool
+    chmod -R u+x ${install_path}/*.sh 2>/dev/null
+
+    # Print the latest release
+    echo "Installed release: $latest_release"
+}
+
+# Fetch the latest release of linux-bash-tweaks
+get_latest_bash_tweaks
+
+# Check if the bashrc-additions file exists
+if [ -f "${HOME}/tools/linux-bash-tweaks/bashrc-additions" ]; then
+    source ${HOME}/tools/linux-bash-tweaks/bashrc-additions
 else
-    echo "Updating linux-bash-tweaks"
-    cd ${HOME}/tools/linux-bash-tweaks
-    git fetch && git reset --hard HEAD && git merge    
+    echo "Bash Tweaks Error: Unable to find bashrc-additions file."
+    return 1
 fi
 
-source ${HOME}/tools/linux-bash-tweaks/bashrc-additions
 cd ~
 ```
 
-This will make sure that your local copy is always in sync with mine.  That is, if you make any changes locally, the `git fetch && git reset ...` line will throw those changes away the next time you start a new shell session.
-
-If you'd rather add your own content -- maybe add a few of your own 3rd party tools to `.daily_tasks.d/01-update-git-repos` or whatver -- make a fork of my repo, change the `git clone` line above, and have fun with it.
+This will make sure that your local copy is always in sync with the current release.  If you add new files to your own local `daily_tasks.d` directory, your changes will be retained. But if you change any of the files provided in the release, it will reset when I make a new release.
 
 ## Contributions
 Feel free to submit pull requests or open issues to suggest new tweaks or improvements.

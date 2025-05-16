@@ -1,23 +1,23 @@
 #!/bin/bash
 # This is a bash script that sets up the user environment
-# It should be called from the .bashrc file
+# It should be called from the .bashrc file with "source path/to/bashrc-additions"
 
+# Get the current absolute path of this script
 DIR_NAME=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 #Some variables to export to the environment
 export TOOLS="${HOME}/tools"
 export GOPATH=$HOME/.local/go
-export PATH="${HOME}/develop:${TOOLS}/testssl.sh:${TOOLS}/ciscot7:${HOME}/tools/sts-3.2.7:${HOME}/.local/bin:${GOPATH}/bin:${PATH}:${TOOLS}/gitleaks:${TOOLS}/trufflehog"
-alias ls='ls --color=auto'
 export LS_COLORS='di=4:fi=0:ln=31:pi=5:so=5:cd=5:or=40:mi=0:ex=32'
+export PATH="${TOOLS}/testssl.sh:${TOOLS}/ciscot7:${HOME}/tools/sts-3.2.7:${HOME}/.local/bin:${GOPATH}/bin:${PATH}:${TOOLS}/gitleaks:${TOOLS}/trufflehog"
 export PS1='\[\e]0;\w\a\]\n\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[0m\]\n\$ '
 
 # Add your own aliases here
-alias addkey="ssh-add ~/.ssh/randy-putty-private"
 alias clean-build="rm -rf build/ dist/ *.egg-info"  # Useful for cleaning up after building Python projects
+alias getclip="powershell.exe -command get-clipboard | dos2unix"          #An alias to get stuff from the Windows clipboard
+alias ls='ls --color=auto'
 alias l1="ls -1"
 alias putclip="clip.exe"        #An alias to put stuff in the Windows clipboard 
-alias getclip="powershell.exe -command get-clipboard | dos2unix"          #An alias to get stuff from the Windows clipboard
 
 complete -C aws_completer aws
 
@@ -34,8 +34,6 @@ marker_file="$HOME/.daily_tasks_done"
 last_run_date=$(cat $marker_file 2>/dev/null)
 
 # If the last run date is not today, run the tasks
-# You'll need to create a .daily_tasks.d/ folder in your home directory
-# and create an executable shell script in there for each task.
 if [ "$current_date" != "$last_run_date" ]; then
     run-parts $DIR_NAME/.daily_tasks.d
     
