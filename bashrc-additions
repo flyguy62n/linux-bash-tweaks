@@ -7,19 +7,37 @@ DIR_NAME=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 #Some variables to export to the environment
 export TOOLS="${HOME}/tools"
-export GOPATH=$HOME/.local/go
 export LS_COLORS='di=4:fi=0:ln=31:pi=5:so=5:cd=5:or=40:mi=0:ex=32'
 export PATH="${TOOLS}/testssl.sh:${TOOLS}/ciscot7:${HOME}/tools/sts-3.2.7:${HOME}/.local/bin:${GOPATH}/bin:${PATH}:${TOOLS}/gitleaks:${TOOLS}/trufflehog"
 export PS1='\[\e]0;\w\a\]\n\[\e[32m\]\u@\h \[\e[33m\]\w\[\e[0m\]\n\$ '
 
 # Add your own aliases here
-alias clean-build="rm -rf build/ dist/ *.egg-info"  # Useful for cleaning up after building Python projects
 alias getclip="powershell.exe -command get-clipboard | dos2unix"          #An alias to get stuff from the Windows clipboard
 alias ls='ls --color=auto'
 alias l1="ls -1"
 alias putclip="clip.exe"        #An alias to put stuff in the Windows clipboard 
 
 complete -C aws_completer aws
+
+############################################
+########### WSL2 SSH Agent #################
+############################################
+# This section sets up the SSH and GPG agent sockets for WSL2
+# It uses socat to create the sockets and wsl2-ssh-pageant.exe to handle the SSH agent
+# It needs to be run before the daily tasks section below in case there are Git repos 
+# needing to be updated which use your Yubikey
+win_gpg=$(which gpg.exe 2>/dev/null)
+# As a pre-requisite to using YubiKey in WSL, test if the Windows GPG is installed
+if test -n "$win_gpg" && test -f "$win_gpg"; then
+    source $DIR_NAME/configure-yubikey    
+else
+    echo >&2 "WARNING: WinGPG not found on the path. SSH agent will not be set up."
+fi
+
+############################################
+######### END WSL2 SSH Agent ###############
+############################################
+
 
 ###########################################
 ######### Run these tasks daily ###########
@@ -48,24 +66,11 @@ fi
 ######### End of daily tasks ###############
 ############################################
 
-
-############################################
-########### WSL2 SSH Agent #################
-############################################
-# This section sets up the SSH and GPG agent sockets for WSL2
-# It uses socat to create the sockets and wsl2-ssh-pageant.exe to handle the SSH agent
-win_gpg=$(which gpg.exe 2>/dev/null)
-# As a pre-requisite to using YubiKey in WSL, test if the Windows GPG is installed
-if test -n "$win_gpg" && test -f "$win_gpg"; then
-    source $DIR_NAME/configure-yubikey    
-else
-    echo >&2 "WARNING: WinGPG not found on the path. SSH agent will not be set up."
+# Run any customized, local scripts you've placed in the ${DIR_NAME}.local.d/ directory
+# This is a good place to put any scripts you want to run at startup
+if [ -d "$DIR_NAME/.local.d" ]; then
+    run-parts $DIR_NAME/.local.d
 fi
-
-
-############################################
-######### END WSL2 SSH Agent ###############
-############################################
 
 #A little fun... use the fortune and cowsay man pages to sort it out.
 fortune -a | cowsay -f vader
