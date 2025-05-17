@@ -120,19 +120,23 @@ function get_latest_bash_tweaks() {
         
     # Download the latest release
     curl -s -L "\$fetch_url" -o \${install_path}/latest.tar.gz
-    if [ $? -ne 0 ]; then
+    if [ \$? -ne 0 ]; then
         echo "Bash Tweaks Error: Unable to download the latest release: \$fetch_url"
         return 1
     fi
 
     # Unzip the latest release
-    tar xzvf $\{install_path}/latest.tar.gz --strip-components=1 -C \${install_path}/ 1>/dev/null
+    tar xzvf \${install_path}/latest.tar.gz --strip-components=1 -C \${install_path}/ 1>/dev/null
+    if [ \$? -ne 0 ]; then
+        echo "Bash Tweaks Error: Unable to extract the latest release."
+        return 1
+    fi
 
     # Update the version marker file
     echo "\$latest_release" > \${install_path}/version
     
     # Set the executable bit on any .sh files in the recently updated tool
-    chmod -R u+x $\{install_path}/*.sh 2>/dev/null
+    chmod -R u+x \${install_path}/*.sh 2>/dev/null
 
     # Print the latest release
     echo "Installed release: \$latest_release"
