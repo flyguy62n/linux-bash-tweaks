@@ -1,0 +1,160 @@
+#!/bin/bash
+
+#Update all APT packages
+sudo apt-get update && sudo apt-get -y dist-upgrade
+
+# Prompt the user for their Windows Users directory
+windows_user_dir="/nosuchpath"
+ls -1d /mnt/c/Users/*/
+while ! [ -d "$windows_user_dir" ]; do
+    read -p "Enter your Windows Users directory (e.g., /mnt/c/Users/YourUsername): " windows_user_dir
+    if ! [ -d "$windows_user_dir" ]; then
+        echo "Directory $windows_user_dir does not exist. Please try again."
+    fi
+done
+
+cd ~
+# Create symlinks to some useful Windows user directories
+win_user_dirs=(
+    "Desktop"
+    "Documents"
+    "Downloads"
+    "OneDrive"
+)
+for dir in "${win_user_dirs[@]}"; do
+    if [ -d "${windows_user_dir}/${dir}" ]; then
+        echo "Creating symlink for ${dir}..."
+        ln -s "${windows_user_dir}/${dir}"
+    else
+        echo "Directory ${windows_user_dir}/${dir} does not exist. Skipping..."
+        continue
+    fi
+done
+
+tools_dir="${HOME}/tools"
+mkdir ${tools_dir}
+
+# Clone some repositories into ~/tools
+cd ${tools_dir}
+git clone https://github.com/drwetter/testssl.sh
+
+############################################
+######## INSTALL ADDITIONAL STUFF ##########
+############################################
+
+#Install pdftotext utils. These are useful for doing text searches on docs provided to you
+#as PDFs.
+
+sudo apt-get -y install poppler-utils
+
+#Python and it's "pip" installer are just good to have around as many tools and scripts will
+#are based on Python and include installation procedures based on PIP
+#PIPX extends PIP to ease running PIP-installed programs, so we'll use that install a few things
+
+sudo apt-get -y install python3-pip pipx
+
+# Update the system path for PIPX-intalled applications
+pipx ensurepath
+
+# Install the KP Analysis Toolkit and SSH-Audit using PIPX
+pipx install kp-analysis-toolkit
+pipx install ssh-audit
+
+#Install some more handy things
+# zip and p7zip - File compression utilities
+# Fortune - Random sayings and quotes for a little login fun
+# Cowsay - ASCII-art cow (and other characters). Used with Fortune for a little login fun
+# Dos2Unix - Convert files between DOS (CRLF) and Unix (LF) formats. A true necessity in a cross-platform world
+# Socat and SCDaemon -- Utilities needed for YubiKey/WSL support
+
+sudo apt-get -y install zip p7zip fortune cowsay dos2unix socat scdaemon
+
+# Add linux-bash-tweaks to the system
+if [ -z "$(grep get_latest_bash_tweaks ${HOME}/.bashrc)" ]; then
+    echo "Adding linux-bash-tweaks to .bashrc..."
+else
+    echo "linux-bash-tweaks already in .bashrc. Skipping..."
+fi
+cat <<EOF >> ${HOME}/.bashrc
+
+########################
+#BEGIN .bashrc CHANGES #
+########################
+
+# function to retrieve the latest linux-bash-tweaks release from GitHub
+function get_latest_bash_tweaks() {
+    # Get the latest release from the GitHub API
+    local install_path="\${HOME}/tools/linux-bash-tweaks"
+    local latest_release=\$(curl -s https://api.github.com/repos/flyguy62n/linux-bash-tweaks/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    local current_version=\$(cat \${install_path}/version 2>/dev/null)
+    
+    # Check if the latest release is not empty
+    if [ -z "\$latest_release" ]; then
+        echo "Bash Tweaks Error: Unable to retrieve the latest release."
+        return 1
+    fi
+    
+    # Make sure the intall path exists
+    if [ ! -d "\$install_path" ]; then
+        mkdir -p "\$install_path"
+        if [ \$? -ne 0 ]; then
+            echo "Bash Tweaks Error: Unable to create install path: \$install_path"
+            return 1
+        fi
+    fi
+
+    if [ "\$latest_release" == "\$current_version" ]; then
+        echo "Latest Bash Tweaks already installed: \$current_version"
+        return 0
+    fi
+
+    # Fetch the latest release from GitHub
+    echo "Fetching latest Bash Tweaks release from GitHub..."
+    curl -s -L ""
+
+    local fetch_url="\$(curl -s https://api.github.com/repos/flyguy62n/linux-bash-tweaks/releases/latest \
+        | grep "tarball_url" \
+        | awk '{ print \$2 }' \
+        | sed 's/,$//'       \
+        | sed 's/"//g' )"
+        
+    # Download the latest release
+    curl -s -L "\$fetch_url" -o \${install_path}/latest.tar.gz
+    if [ $? -ne 0 ]; then
+        echo "Bash Tweaks Error: Unable to download the latest release: \$fetch_url"
+        return 1
+    fi
+
+    # Unzip the latest release
+    tar xzvf $\{install_path}/latest.tar.gz --strip-components=1 -C \${install_path}/ 1>/dev/null
+
+    # Update the version marker file
+    echo "\$latest_release" > \${install_path}/version
+    
+    # Set the executable bit on any .sh files in the recently updated tool
+    chmod -R u+x $\{install_path}/*.sh 2>/dev/null
+
+    # Print the latest release
+    echo "Installed release: \$latest_release"
+}
+
+# Fetch the latest release of linux-bash-tweaks
+get_latest_bash_tweaks
+
+# Check if the bashrc-additions file exists
+if [ -f "\${HOME}/tools/linux-bash-tweaks/bashrc-additions" ]; then
+    source \${HOME}/tools/linux-bash-tweaks/bashrc-additions
+else
+    echo "Bash Tweaks Error: Unable to find bashrc-additions file."
+    return 1
+fi
+
+cd ~
+EOF
+
+############################################
+################ ALL DONE ##################
+############################################
+
+echo "Your WSL environment is set up now.  Restart your shell prompt."
+
