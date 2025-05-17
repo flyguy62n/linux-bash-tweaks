@@ -11,7 +11,15 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 - Place user-provided local `.local.d/` directory
 
 ## Usage
-Run `configure-wsl` in this repo.  Once done, restart your Bash session or run `source ~/.bashrc`.
+Run `configure-wsl` in this repo.  
+
+```bash
+wget https://github.com/flyguy62n/linux-bash-tweaks/raw/refs/tags/0.0.5/configure-wsl
+bash configure-wsl
+rm configure-wsl
+```
+
+Once done, restart your Bash session or run `source ~/.bashrc`.
 
 This will make sure that your local copy is always in sync with the current release.  If you add new files to your own local `.daily_tasks.d/` directory, your changes will be retained. But if you change any of the files provided in the release, it will reset when I make a new release.
 
