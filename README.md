@@ -14,7 +14,7 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 Run `configure-wsl` in this repo.  
 
 ```bash
-wget https://github.com/flyguy62n/linux-bash-tweaks/raw/refs/tags/0.0.5/configure-wsl
+wget https://github.com/flyguy62n/linux-bash-tweaks/raw/refs/heads/main/configure-wsl
 bash configure-wsl
 rm configure-wsl
 ```
