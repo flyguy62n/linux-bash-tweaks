@@ -53,8 +53,17 @@ last_run_date=$(cat $marker_file 2>/dev/null)
 
 # If the last run date is not today, run the tasks
 if [ "$current_date" != "$last_run_date" ]; then
-    run-parts $DIR_NAME/.daily_tasks.d
-    
+    # Find all executable files in the .local.d directory
+    # We'll use this method instead of run-parts so that we can "source" the scripts
+    # in case any scripts export an environment variable to the main shell environment
+    for script in "$DIR_NAME/.daily_tasks.d/"*; do
+        # Check if the file is executable
+        if [ -x "$script" ]; then
+            # Run the script
+            source "$script"
+        fi
+    done
+
     # Create/update the marker file to indicate that the tasks have been run
     echo "$current_date" > $marker_file
     echo "Daily tasks completed."
@@ -69,7 +78,16 @@ fi
 # Run any customized, local scripts you've placed in the ${DIR_NAME}.local.d/ directory
 # This is a good place to put any scripts you want to run at startup
 if [ -d "$DIR_NAME/.local.d" ]; then
-    run-parts $DIR_NAME/.local.d
+    # Find all executable files in the .local.d directory
+    # We'll use this method instead of run-parts so that we can "source" the scripts
+    # in case any scripts export an environment variable to the main shell environment
+    for script in "$DIR_NAME/.local.d/"*; do
+        # Check if the file is executable
+        if [ -x "$script" ]; then
+            # Run the script
+            source "$script"
+        fi
+    done
 fi
 
 #A little fun... use the fortune and cowsay man pages to sort it out.
