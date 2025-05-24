@@ -3,8 +3,8 @@
 
 ROOT_DIR="${HOME}/develop"
 if ! test -d "${ROOT_DIR}"; then
-    echo -e "\nDirectory ${ROOT_DIR} does not exist. Exiting."
-    exit 1
+    echo -e "\nDirectory ${ROOT_DIR} does not exist."
+    return 1
 fi
 
 # Prompt the user if they'd like to update the git repositories
