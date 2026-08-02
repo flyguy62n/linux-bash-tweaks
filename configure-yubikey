@@ -8,6 +8,13 @@
 # for the rest of the instructions
 # SSH Socket
 
+# Relies on LBT_IS_WSL / LBT_WIN_LOCALAPPDATA already being set by
+# lib-environment, which bashrc-additions sources before sourcing this file.
+if [ "$LBT_IS_WSL" != "1" ]; then
+    echo >&2 "Not running under WSL. Skipping YubiKey agent setup."
+    return 0 2>/dev/null || exit 0
+fi
+
 echo "Setting up YubiKey SSH and GPG agent sockets for WSL2..."
 
 export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
@@ -27,11 +34,10 @@ export GPG_AGENT_SOCK="$(gpgconf --list-dirs agent-socket)"
 if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
     rm -rf "$GPG_AGENT_SOCK"
     wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
-    # Ask Windows for the current user's LOCALAPPDATA (e.g. C:\Users\RJBar\AppData\Local);
-    # cmd.exe echoes CRLF, so strip the trailing \r.
-    win_localappdata="$(cmd.exe /C "echo %LOCALAPPDATA%" 2>/dev/null | tr -d '\r')"
-    # wsl2-ssh-pageant.exe wants a Windows path but with forward slashes...
-    config_path="${win_localappdata//\\//}"
+    # LBT_WIN_LOCALAPPDATA (from lib-environment) is a WSL-style path, e.g.
+    # /mnt/c/Users/RJBar/AppData/Local. wsl2-ssh-pageant.exe wants it back as
+    # a Windows path with forward slashes instead...
+    config_path="$(wslpath -m "$LBT_WIN_LOCALAPPDATA")"
     # ...and the drive-letter colon backslash-escaped, since socat's EXEC:"..."
     # address parsing treats a bare ":" as a field separator.
     config_path="${config_path/:/\\:}/gnupg"

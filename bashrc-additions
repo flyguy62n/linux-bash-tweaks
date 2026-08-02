@@ -5,6 +5,10 @@
 # Get the current absolute path of this script
 DIR_NAME=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
+# Detect WSL / resolve Windows interop paths once; cached under ~/.config so
+# repeat shells don't have to re-run cmd.exe on every startup.
+source "$DIR_NAME/lib-environment"
+
 #Some variables to export to the environment
 export TOOLS="${HOME}/tools"
 export LS_COLORS='di=4:fi=0:ln=31:pi=5:so=5:cd=5:or=40:mi=0:ex=32'
@@ -26,12 +30,14 @@ complete -C aws_completer aws
 # It uses socat to create the sockets and wsl2-ssh-pageant.exe to handle the SSH agent
 # It needs to be run before the daily tasks section below in case there are Git repos 
 # needing to be updated which use your Yubikey
-win_gpg=$(which gpg.exe 2>/dev/null)
-# As a pre-requisite to using YubiKey in WSL, test if the Windows GPG is installed
-if test -n "$win_gpg" && test -f "$win_gpg"; then
-    source $DIR_NAME/configure-yubikey    
-else
-    echo >&2 "WARNING: WinGPG not found on the path. SSH agent will not be set up."
+if [ "$LBT_IS_WSL" = "1" ]; then
+    win_gpg=$(which gpg.exe 2>/dev/null)
+    # As a pre-requisite to using YubiKey in WSL, test if the Windows GPG is installed
+    if test -n "$win_gpg" && test -f "$win_gpg"; then
+        source $DIR_NAME/configure-yubikey
+    else
+        echo >&2 "WARNING: WinGPG not found on the path. SSH agent will not be set up."
+    fi
 fi
 
 ############################################
@@ -45,7 +51,8 @@ fi
 
 # Get the current date
 current_date=$(date +%Y-%m-%d)
-marker_file="$HOME/.daily_tasks_done"
+mkdir -p "$LBT_CONFIG_DIR"
+marker_file="$LBT_CONFIG_DIR/daily_tasks_done"
 
 # Get the last run date from the marker file (if it exists)
 # If the marker file doesn't exist, send the error to /dev/null
@@ -53,7 +60,7 @@ last_run_date=$(cat $marker_file 2>/dev/null)
 
 # If the last run date is not today, run the tasks
 if [ "$current_date" != "$last_run_date" ]; then
-    # Find all executable files in the .local.d directory
+    # Find all executable files in the .daily_tasks.d directory
     # We'll use this method instead of run-parts so that we can "source" the scripts
     # in case any scripts export an environment variable to the main shell environment
     for script in "$DIR_NAME/.daily_tasks.d/"*; do
@@ -63,6 +70,17 @@ if [ "$current_date" != "$last_run_date" ]; then
             source "$script"
         fi
     done
+
+    # Same again, but for your own daily tasks. These live outside the install
+    # path (which is disposable and gets replaced wholesale on every release)
+    # so they survive updates untouched.
+    if [ -d "$LBT_CONFIG_DIR/daily_tasks.d" ]; then
+        for script in "$LBT_CONFIG_DIR/daily_tasks.d/"*; do
+            if [ -x "$script" ]; then
+                source "$script"
+            fi
+        done
+    fi
 
     # Create/update the marker file to indicate that the tasks have been run
     echo "$current_date" > $marker_file
@@ -75,13 +93,15 @@ fi
 ######### End of daily tasks ###############
 ############################################
 
-# Run any customized, local scripts you've placed in the ${DIR_NAME}.local.d/ directory
-# This is a good place to put any scripts you want to run at startup
-if [ -d "$DIR_NAME/.local.d" ]; then
-    # Find all executable files in the .local.d directory
+# Run any customized, local scripts you've placed in ~/.config/linux-bash-tweaks/local.d/
+# This is a good place to put any scripts you want to run at startup. It lives
+# outside the install path (which is disposable and gets replaced wholesale on
+# every release) so your scripts survive updates untouched.
+if [ -d "$LBT_CONFIG_DIR/local.d" ]; then
+    # Find all executable files in the local.d directory
     # We'll use this method instead of run-parts so that we can "source" the scripts
     # in case any scripts export an environment variable to the main shell environment
-    for script in "$DIR_NAME/.local.d/"*; do
+    for script in "$LBT_CONFIG_DIR/local.d/"*; do
         # Check if the file is executable
         if [ -x "$script" ]; then
             # Run the script
