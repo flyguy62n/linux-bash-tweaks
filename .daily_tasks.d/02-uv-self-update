@@ -1,0 +1,14 @@
+#!/bin/bash
+# This script is intended to be run daily to update uv itself
+# Check if uv is installed
+if ! command -v uv &> /dev/null; then
+    echo "uv could not be found. Skipping..."
+    exit
+fi
+
+# Update uv itself. Runs before 02-uv-update so tool upgrades use the latest uv.
+echo "################################"
+echo "######## UPDATING UV ##########"
+echo "################################"
+
+uv self update
