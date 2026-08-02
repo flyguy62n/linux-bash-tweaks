@@ -9,10 +9,16 @@ sudo apt-get update && sudo apt-get -y dist-upgrade
 lbt_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/linux-bash-tweaks"
 mkdir -p "$lbt_config_dir"
 
-# Only wire up Windows-side symlinks when actually running under WSL, so this
-# script can also be run cleanly on plain Ubuntu boxes. /proc/version on a WSL
-# kernel contains "microsoft".
+# Only wire up Windows-side steps (symlinks, YubiKey packages) when actually
+# running under WSL, so this script can also be run cleanly on plain Ubuntu
+# boxes. /proc/version on a WSL kernel contains "microsoft".
 if grep -qi microsoft /proc/version 2>/dev/null; then
+    is_wsl=1
+else
+    is_wsl=0
+fi
+
+if [ "$is_wsl" = "1" ]; then
     # Auto-resolve the Windows user's profile directory: ask cmd.exe for
     # %USERPROFILE%, then use wslpath so it maps to wherever C: is actually
     # mounted (normally /mnt/c, but not guaranteed).
@@ -97,9 +103,13 @@ pipx install ssh-audit
 # Fortune - Random sayings and quotes for a little login fun
 # Cowsay - ASCII-art cow (and other characters). Used with Fortune for a little login fun
 # Dos2Unix - Convert files between DOS (CRLF) and Unix (LF) formats. A true necessity in a cross-platform world
-# Socat and SCDaemon -- Utilities needed for YubiKey/WSL support
 
-sudo apt-get -y install zip p7zip fortune cowsay dos2unix socat scdaemon
+sudo apt-get -y install zip p7zip fortune cowsay dos2unix
+
+# Socat and SCDaemon -- Utilities needed for YubiKey/WSL support. Only relevant under WSL.
+if [ "$is_wsl" = "1" ]; then
+    sudo apt-get -y install socat scdaemon
+fi
 
 # Add linux-bash-tweaks to the system
 if [ -z "$(grep get_latest_bash_tweaks ${HOME}/.bashrc)" ]; then
