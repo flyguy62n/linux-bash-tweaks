@@ -6,7 +6,7 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 - Simple activation in `.bashrc` to install and maintain
 - Custom aliases for common commands
 - Enhanced prompt customization
-- Once-daily auto-update of `git clone`d and `pipx`-managed utilities
+- Once-daily auto-update of `git clone`d and `uv`-managed utilities
 - WSL support for YubiKey FIDO tokens in SSH and GPG
 - Place user-provided scripts in `~/.config/linux-bash-tweaks/local.d/` (or `daily_tasks.d/`) — they survive updates since they live outside the install path
 
