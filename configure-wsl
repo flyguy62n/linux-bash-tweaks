@@ -110,6 +110,31 @@ sudo apt-get -y install zip p7zip fortune cowsay dos2unix
 # Socat and SCDaemon -- Utilities needed for YubiKey/WSL support. Only relevant under WSL.
 if [ "$is_wsl" = "1" ]; then
     sudo apt-get -y install socat scdaemon
+
+    # Ensure ~/.ssh exists with secure permissions and install wsl2-ssh-pageant.
+    ssh_dir="${HOME}/.ssh"
+    wsl2_ssh_pageant_dest="${ssh_dir}/wsl2-ssh-pageant.exe"
+    wsl2_ssh_pageant_url="https://github.com/BlackReloaded/wsl2-ssh-pageant/releases/download/v1.4.0/wsl2-ssh-pageant.exe"
+    wsl2_ssh_pageant_fallback_url="https://raw.githubusercontent.com/flyguy62n/linux-bash-tweaks/main/assets/wsl2-ssh-pageant.exe"
+
+    if [ ! -d "$ssh_dir" ]; then
+        mkdir -p "$ssh_dir"
+        chmod 700 "$ssh_dir"
+    fi
+
+    if curl -fsSL "$wsl2_ssh_pageant_url" -o "$wsl2_ssh_pageant_dest"; then
+        echo "Installed wsl2-ssh-pageant.exe from upstream release URL."
+    elif curl -fsSL "$wsl2_ssh_pageant_fallback_url" -o "$wsl2_ssh_pageant_dest"; then
+        echo "Installed wsl2-ssh-pageant.exe from linux-bash-tweaks fallback URL."
+    else
+        echo >&2 "WARNING: Unable to download wsl2-ssh-pageant.exe from either source URL."
+    fi
+
+    if [ -f "$wsl2_ssh_pageant_dest" ]; then
+        chmod 700 "$wsl2_ssh_pageant_dest"
+    fi
+
+    unset ssh_dir wsl2_ssh_pageant_dest wsl2_ssh_pageant_url wsl2_ssh_pageant_fallback_url
 fi
 
 # On WSL distros with systemd enabled, systemd's own gpg-agent socket units
