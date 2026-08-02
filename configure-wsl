@@ -89,8 +89,7 @@ sudo apt-get -y install python3-pip pipx
 # Update the system path for PIPX-intalled applications
 pipx ensurepath
 
-# Install the KP Analysis Toolkit and SSH-Audit using PIPX
-pipx install kp-analysis-toolkit
+# Install SSH-Audit using PIPX
 pipx install ssh-audit
 
 #Install some more handy things
