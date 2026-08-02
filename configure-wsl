@@ -112,6 +112,24 @@ if [ "$is_wsl" = "1" ]; then
     sudo apt-get -y install socat scdaemon
 fi
 
+# On WSL distros with systemd enabled, systemd's own gpg-agent socket units
+# compete with the socat-based YubiKey bridge configure-yubikey sets up --
+# both want to own the same socket path. Mask and stop them so systemd never
+# manages (or re-creates) them.
+#
+# /run/systemd/system only exists while systemd is actually running as PID 1.
+# That's a more reliable signal than reading /etc/wsl.conf's systemd=true,
+# since the config file only reflects configured intent and doesn't take
+# effect until the WSL instance is restarted.
+if [ "$is_wsl" = "1" ] && [ -d /run/systemd/system ] && command -v systemctl &>/dev/null; then
+    echo "Masking systemd-managed gpg-agent sockets..."
+    gpg_agent_sockets=(gpg-agent.socket gpg-agent-ssh.socket gpg-agent-extra.socket gpg-agent-browser.socket)
+    systemctl --user mask "${gpg_agent_sockets[@]}"
+    systemctl --user stop "${gpg_agent_sockets[@]}"
+    rm -f "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gnupg/S.gpg-agent"*
+    unset gpg_agent_sockets
+fi
+
 # Add linux-bash-tweaks to the system
 if [ -z "$(grep get_latest_bash_tweaks ${HOME}/.bashrc)" ]; then
     echo "Adding linux-bash-tweaks to .bashrc..."
