@@ -23,11 +23,18 @@ if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
     unset wsl2_ssh_pageant_bin
 fi
 # GPG Socket
-export GPG_AGENT_SOCK="$HOME/.gnupg/S.gpg-agent"
+export GPG_AGENT_SOCK="$(gpgconf --list-dirs agent-socket)"
 if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
     rm -rf "$GPG_AGENT_SOCK"
     wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
-    config_path="C\:/Users/RandyBartels/AppData/Local/gnupg"
+    # Ask Windows for the current user's LOCALAPPDATA (e.g. C:\Users\RJBar\AppData\Local);
+    # cmd.exe echoes CRLF, so strip the trailing \r.
+    win_localappdata="$(cmd.exe /C "echo %LOCALAPPDATA%" 2>/dev/null | tr -d '\r')"
+    # wsl2-ssh-pageant.exe wants a Windows path but with forward slashes...
+    config_path="${win_localappdata//\\//}"
+    # ...and the drive-letter colon backslash-escaped, since socat's EXEC:"..."
+    # address parsing treats a bare ":" as a field separator.
+    config_path="${config_path/:/\\:}/gnupg"
         if test -x "$wsl2_ssh_pageant_bin"; then
             (setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$wsl2_ssh_pageant_bin -gpgConfigBasepath ${config_path} -gpg S.gpg-agent" >/dev/null 2>&1 &)
             echo "YubiKey GPG_AGENT_SOCK: $GPG_AGENT_SOCK"
