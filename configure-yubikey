@@ -18,7 +18,10 @@ fi
 echo "Setting up YubiKey SSH and GPG agent sockets for WSL2..."
 
 export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
-if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
+# ss stderr is dropped: on the WSL2 kernel `ss -a` emits a cosmetic
+# "RTNETLINK answers: Invalid argument" for socket families with no sock_diag
+# handler, but still writes the socket list we grep on stdout.
+if ! ss -a 2>/dev/null | grep -q "$SSH_AUTH_SOCK"; then
     rm -f "$SSH_AUTH_SOCK"
     wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
         if test -x "$wsl2_ssh_pageant_bin"; then
@@ -31,7 +34,7 @@ if ! ss -a | grep -q "$SSH_AUTH_SOCK"; then
 fi
 # GPG Socket
 export GPG_AGENT_SOCK="$(gpgconf --list-dirs agent-socket)"
-if ! ss -a | grep -q "$GPG_AGENT_SOCK"; then
+if ! ss -a 2>/dev/null | grep -q "$GPG_AGENT_SOCK"; then
     rm -rf "$GPG_AGENT_SOCK"
     wsl2_ssh_pageant_bin="$HOME/.ssh/wsl2-ssh-pageant.exe"
     # LBT_WIN_LOCALAPPDATA (from lib-environment) is a WSL-style path, e.g.
