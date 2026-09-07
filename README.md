@@ -1,4 +1,4 @@
-# Linux Bash Tweaks
+# Linux Bash Tweaks (LBT)
 
 This repository contains a collection of `.bashrc` tweaks and customizations to enhance and personalize my Bash environment. These tweaks are designed to improve productivity, streamline workflows, and add useful functionality to my terminal.  Maybe you'll like something in them too.
 
@@ -12,12 +12,12 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 - Place user-provided scripts in `~/.config/linux-bash-tweaks/local.d/` (or `daily_tasks.d/`) — they survive updates since they live outside the install path
 
 ## Usage
-Run `configure-wsl` in this repo.  
+Run `configure-lbt` in this repo.  
 
 ```bash
-wget https://raw.githubusercontent.com/flyguy62n/linux-bash-tweaks/main/configure-wsl
-bash configure-wsl
-rm configure-wsl
+wget https://raw.githubusercontent.com/flyguy62n/linux-bash-tweaks/main/configure-lbt
+bash configure-lbt
+rm configure-lbt
 ```
 
 Once done, restart your Bash session or run `source ~/.bashrc`.
