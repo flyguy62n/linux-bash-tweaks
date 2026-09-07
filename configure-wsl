@@ -101,6 +101,10 @@ if [ "$(id -un)" = "randy" ]; then
             chmod 600 "$lbt_config_file"
             rm -f "$lbt_tmp"
             echo "Saved dotfiles PAT to ${lbt_config_file}."
+            # This script can't call lbt_dotfiles_sync (the release isn't
+            # extracted yet). Clear the daily-tasks marker so the shipped
+            # dotfiles task runs on the next shell instead of waiting a day.
+            rm -f "${lbt_config_dir}/daily_tasks_done"
         else
             echo "Skipped. Run 'lbt_dotfiles_setup' later to enable dotfiles sync."
         fi

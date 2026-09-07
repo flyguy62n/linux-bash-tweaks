@@ -7,16 +7,7 @@
 # below keeps it working if it's ever run on its own.
 [ -n "$LBT_DOTFILES_REPO" ] || return 0
 
-command -v lbt_fetch_release >/dev/null 2>&1 || \
+command -v lbt_dotfiles_sync >/dev/null 2>&1 || \
     source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../lib-release"
 
-dotfiles_dir="${TOOLS:-$HOME/tools}/dotfiles"
-if lbt_fetch_release "$LBT_DOTFILES_REPO" "$dotfiles_dir"; then
-    want="$dotfiles_dir/git/config"
-    if [ -f "$want" ] && [ "$(git config --global --get include.path)" != "$want" ]; then
-        git config --global include.path "$want"
-        echo "linux-bash-tweaks: wired git include.path -> $want"
-    fi
-    unset want
-fi
-unset dotfiles_dir
+lbt_dotfiles_sync || true

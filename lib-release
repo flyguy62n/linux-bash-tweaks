@@ -90,14 +90,37 @@ lbt_fetch_release() {
     echo "linux-bash-tweaks: updated ${repo} to ${latest}"
 }
 
+# Fetch the dotfiles release and wire its git/config into the global git
+# include path. Safe to call repeatedly; no-op when LBT_DOTFILES_REPO is unset.
+# Both the daily task and lbt_dotfiles_setup go through this.
+lbt_dotfiles_sync() {
+    [ -n "$LBT_DOTFILES_REPO" ] || return 0
+    local dotfiles_dir="${TOOLS:-$HOME/tools}/dotfiles"
+    lbt_fetch_release "$LBT_DOTFILES_REPO" "$dotfiles_dir" || return $?
+
+    local want="${dotfiles_dir}/git/config"
+    if [ -f "$want" ] && [ "$(git config --global --get include.path)" != "$want" ]; then
+        git config --global include.path "$want"
+        echo "linux-bash-tweaks: wired git include.path -> ${want}"
+    fi
+}
+
 lbt_dotfiles_setup() {
     local cfg_dir="${LBT_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-bash-tweaks}"
     local cfg="${cfg_dir}/config"
     local repo="${LBT_DOTFILES_REPO:-flyguy62n/dotfiles}"
+    local api_repo="https://api.github.com/repos/${repo}"
 
-    if [ -n "$(lbt__github_token)" ]; then
-        echo "linux-bash-tweaks: dotfiles sync already configured."
-        return 0
+    # If a token already resolves *and still works*, there's nothing to do.
+    # A stale/expired token falls through so the PAT can be rotated in place.
+    local existing; existing="$(lbt__github_token)"
+    if [ -n "$existing" ]; then
+        if curl -fsI -o /dev/null -H "Authorization: Bearer ${existing}" \
+                -H "Accept: application/vnd.github+json" "$api_repo"; then
+            echo "linux-bash-tweaks: dotfiles sync already configured."
+            return 0
+        fi
+        echo "linux-bash-tweaks: the saved token no longer works for ${repo}; enter a new one."
     fi
 
     local pat
@@ -112,8 +135,7 @@ lbt_dotfiles_setup() {
     # releases/latest would 404 before the first release even with a good token.
     if ! curl -fsI -o /dev/null \
             -H "Authorization: Bearer ${pat}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${repo}"; then
+            -H "Accept: application/vnd.github+json" "$api_repo"; then
         echo >&2 "linux-bash-tweaks: that token can't read ${repo}; nothing saved."
         return 1
     fi
@@ -128,5 +150,9 @@ lbt_dotfiles_setup() {
     ( umask 077; cat "$tmp" > "$cfg" )
     chmod 600 "$cfg"
     rm -f "$tmp"
-    echo "linux-bash-tweaks: saved to ${cfg}. Open a new shell to activate."
+    echo "linux-bash-tweaks: saved to ${cfg}."
+
+    # Initialize now instead of waiting for the next daily cycle.
+    export LBT_DOTFILES_REPO="$repo" LBT_DOTFILES_TOKEN="$pat"
+    lbt_dotfiles_sync
 }
