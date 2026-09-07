@@ -44,8 +44,10 @@ identity and signing settings follow you across machines.
   *Contents: read-only*. Store it as `LBT_DOTFILES_TOKEN` in
   `~/.config/linux-bash-tweaks/config` — a `KEY=value` file sourced on startup, kept at
   mode `600`. `$GITHUB_TOKEN`, `$GH_TOKEN`, and `gh auth token` are also honored.
-- Run `lbt_dotfiles_setup` to enter and validate the PAT; it writes the config file for
-  you. Fine-grained PATs expire within a year — rerun it to rotate.
+- Run `lbt_dotfiles_setup` to enter and validate the PAT; it writes the config file and
+  runs an initial sync. Rerun it any time to repair a sync that failed (e.g. `git`
+  wasn't installed yet) — with a working token it just re-syncs. Fine-grained PATs
+  expire within a year; `lbt_dotfiles_setup --force` replaces a still-valid one.
 - The maintainer's own login defaults `LBT_DOTFILES_REPO` to `flyguy62n/dotfiles`;
   everyone else leaves it unset and nothing happens.
 

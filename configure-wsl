@@ -3,6 +3,10 @@
 #Update all APT packages
 sudo apt-get update && sudo apt-get -y dist-upgrade
 
+# Core utilities this script needs before the "install additional stuff"
+# section further down: git for the clones below, curl for the downloads.
+sudo apt-get -y install git curl ca-certificates
+
 # This script is fetched and run standalone (see README), before the rest of
 # the repo — including lib-environment — exists on disk, so WSL detection is
 # duplicated here rather than sourced.

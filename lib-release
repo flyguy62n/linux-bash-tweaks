@@ -99,26 +99,47 @@ lbt_dotfiles_sync() {
     lbt_fetch_release "$LBT_DOTFILES_REPO" "$dotfiles_dir" || return $?
 
     local want="${dotfiles_dir}/git/config"
-    if [ -f "$want" ] && [ "$(git config --global --get include.path)" != "$want" ]; then
-        git config --global include.path "$want"
+    [ -f "$want" ] || return 0
+
+    if ! command -v git >/dev/null 2>&1; then
+        echo >&2 "linux-bash-tweaks: git not installed; cannot wire include.path."
+        return 1
+    fi
+
+    [ "$(git config --global --get include.path 2>/dev/null)" = "$want" ] && return 0
+
+    if git config --global include.path "$want"; then
         echo "linux-bash-tweaks: wired git include.path -> ${want}"
+    else
+        echo >&2 "linux-bash-tweaks: failed to set git include.path -> ${want}"
+        return 1
     fi
 }
 
 lbt_dotfiles_setup() {
+    local force=0
+    case "$1" in
+        -f|--force) force=1 ;;
+        "") ;;
+        *) echo >&2 "usage: lbt_dotfiles_setup [--force]"; return 2 ;;
+    esac
+
     local cfg_dir="${LBT_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-bash-tweaks}"
     local cfg="${cfg_dir}/config"
     local repo="${LBT_DOTFILES_REPO:-flyguy62n/dotfiles}"
     local api_repo="https://api.github.com/repos/${repo}"
 
-    # If a token already resolves *and still works*, there's nothing to do.
-    # A stale/expired token falls through so the PAT can be rotated in place.
+    # If a token already resolves and still works, there's nothing to capture --
+    # just (re-)run the sync so a previously failed wiring (e.g. git wasn't
+    # installed yet) gets repaired. --force skips this to replace a still-valid
+    # token anyway. A stale/expired token always falls through to the prompt.
     local existing; existing="$(lbt__github_token)"
-    if [ -n "$existing" ]; then
+    if [ -n "$existing" ] && [ "$force" -eq 0 ]; then
         if curl -fsI -o /dev/null -H "Authorization: Bearer ${existing}" \
                 -H "Accept: application/vnd.github+json" "$api_repo"; then
-            echo "linux-bash-tweaks: dotfiles sync already configured."
-            return 0
+            echo "linux-bash-tweaks: dotfiles sync already configured; re-syncing."
+            lbt_dotfiles_sync
+            return $?
         fi
         echo "linux-bash-tweaks: the saved token no longer works for ${repo}; enter a new one."
     fi
