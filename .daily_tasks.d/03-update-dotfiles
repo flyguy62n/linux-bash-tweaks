@@ -1,0 +1,22 @@
+#!/bin/bash
+# Sync the maintainer's private dotfiles release and wire its git/config into
+# the global git include path. Inert unless LBT_DOTFILES_REPO is set (see
+# lib-environment) and a GitHub token resolves (see lib-release / README).
+#
+# Sourced by bashrc-additions (which sources lib-release first); the fallback
+# below keeps it working if it's ever run on its own.
+[ -n "$LBT_DOTFILES_REPO" ] || return 0
+
+command -v lbt_fetch_release >/dev/null 2>&1 || \
+    source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../lib-release"
+
+dotfiles_dir="${TOOLS:-$HOME/tools}/dotfiles"
+if lbt_fetch_release "$LBT_DOTFILES_REPO" "$dotfiles_dir"; then
+    want="$dotfiles_dir/git/config"
+    if [ -f "$want" ] && [ "$(git config --global --get include.path)" != "$want" ]; then
+        git config --global include.path "$want"
+        echo "linux-bash-tweaks: wired git include.path -> $want"
+    fi
+    unset want
+fi
+unset dotfiles_dir

@@ -37,4 +37,19 @@ LBT_WIN_LOCALAPPDATA="$LBT_WIN_LOCALAPPDATA"
 EOF
 fi
 
+# User-managed settings, distinct from the auto-generated env cache above. Holds
+# the optional dotfiles-sync knobs (LBT_DOTFILES_REPO, LBT_DOTFILES_TOKEN); see
+# lib-release and the README.
+LBT_CONFIG_FILE="$LBT_CONFIG_DIR/config"
+if [ -f "$LBT_CONFIG_FILE" ]; then
+    source "$LBT_CONFIG_FILE"
+fi
+
+# The maintainer's own accounts default to syncing the private dotfiles repo;
+# everyone else leaves LBT_DOTFILES_REPO unset and the feature stays inert.
+if [ -z "$LBT_DOTFILES_REPO" ] && [ "$(id -un)" = "randy" ]; then
+    LBT_DOTFILES_REPO="flyguy62n/dotfiles"
+fi
+
 export LBT_IS_WSL LBT_WIN_USERPROFILE LBT_WIN_LOCALAPPDATA
+export LBT_CONFIG_DIR LBT_DOTFILES_REPO LBT_DOTFILES_TOKEN

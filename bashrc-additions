@@ -9,6 +9,10 @@ DIR_NAME=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 # repeat shells don't have to re-run cmd.exe on every startup.
 source "$DIR_NAME/lib-environment"
 
+# Release-fetching helpers (lbt_fetch_release, lbt_dotfiles_setup) used by the
+# dotfiles daily task below.
+source "$DIR_NAME/lib-release"
+
 #Some variables to export to the environment
 export TOOLS="${HOME}/tools"
 export LS_COLORS='di=4:fi=0:ln=31:pi=5:so=5:cd=5:or=40:mi=0:ex=32'
@@ -92,6 +96,14 @@ fi
 ############################################
 ######### End of daily tasks ###############
 ############################################
+
+# One-time nudge (maintainer only): dotfiles sync is wanted (LBT_DOTFILES_REPO
+# set) but no GitHub token is saved yet. Never prompts; disappears once
+# 'lbt_dotfiles_setup' has stored the PAT.
+if [ -n "$LBT_DOTFILES_REPO" ] && [[ $- == *i* ]] \
+   && [ "$(id -un)" = "randy" ] && [ -z "$(lbt__github_token)" ]; then
+    echo "linux-bash-tweaks: run 'lbt_dotfiles_setup' to enable dotfiles sync."
+fi
 
 # Run any customized, local scripts you've placed in ~/.config/linux-bash-tweaks/local.d/
 # This is a good place to put any scripts you want to run at startup. It lives

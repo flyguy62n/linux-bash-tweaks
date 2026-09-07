@@ -8,6 +8,7 @@ This repository contains a collection of `.bashrc` tweaks and customizations to 
 - Enhanced prompt customization
 - Once-daily auto-update of `git clone`d and `uv`-managed utilities
 - WSL support for YubiKey FIDO tokens in SSH and GPG
+- Optional sync of a private dotfiles repo's git config across machines
 - Place user-provided scripts in `~/.config/linux-bash-tweaks/local.d/` (or `daily_tasks.d/`) — they survive updates since they live outside the install path
 
 ## Usage
@@ -30,6 +31,23 @@ Place user-managed, local scripts in `~/.config/linux-bash-tweaks/local.d/` and 
 3. Mark the file executable with `chmod u+x <filename>`
 
 You can do the same thing with daily tasks by placing them in `~/.config/linux-bash-tweaks/daily_tasks.d/`, alongside the built-in ones shipped in the release.
+
+### Optional: sync a private repo's git config
+
+Set `LBT_DOTFILES_REPO` to an `owner/repo` slug and a daily task downloads that repo's
+latest GitHub **release** into `~/tools/dotfiles/`, then points
+`git config --global include.path` at `~/tools/dotfiles/git/config` — so your git
+identity and signing settings follow you across machines.
+
+- The repo must publish GitHub releases and contain `git/config` at its root.
+- For a **private** repo, provide a fine-grained PAT scoped to that one repo with
+  *Contents: read-only*. Store it as `LBT_DOTFILES_TOKEN` in
+  `~/.config/linux-bash-tweaks/config` — a `KEY=value` file sourced on startup, kept at
+  mode `600`. `$GITHUB_TOKEN`, `$GH_TOKEN`, and `gh auth token` are also honored.
+- Run `lbt_dotfiles_setup` to enter and validate the PAT; it writes the config file for
+  you. Fine-grained PATs expire within a year — rerun it to rotate.
+- The maintainer's own login defaults `LBT_DOTFILES_REPO` to `flyguy62n/dotfiles`;
+  everyone else leaves it unset and nothing happens.
 
 ## Contributions
 Feel free to submit pull requests or open issues to suggest new tweaks or improvements.

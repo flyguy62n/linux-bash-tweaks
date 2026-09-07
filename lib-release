@@ -1,0 +1,132 @@
+#!/bin/bash
+# Shared release-fetching helpers for linux-bash-tweaks. Meant to be sourced
+# (not executed), normally by bashrc-additions.
+#
+# lbt_fetch_release <owner/repo> <dest_dir>
+#   Downloads the latest GitHub release tarball of <owner/repo> into <dest_dir>
+#   (extracted with --strip-components=1) and records the release tag in
+#   <dest_dir>/version. Skips the download when that marker already matches the
+#   latest tag. For a private repo it authenticates with the first token it can
+#   find: $LBT_DOTFILES_TOKEN, then $GITHUB_TOKEN / $GH_TOKEN, then
+#   `gh auth token`. Returns non-zero on any failure so callers can treat a bad
+#   token or a network blip as "skip this run" rather than fatal.
+#
+# lbt_dotfiles_setup
+#   Interactive, idempotent capture of the fine-grained PAT used to reach the
+#   maintainer's private dotfiles repo. Writes it to
+#   ~/.config/linux-bash-tweaks/config (mode 600). No-op when a token already
+#   resolves.
+
+# Echo the first usable GitHub token, or nothing.
+lbt__github_token() {
+    if [ -n "$LBT_DOTFILES_TOKEN" ]; then
+        printf '%s' "$LBT_DOTFILES_TOKEN"
+    elif [ -n "$GITHUB_TOKEN" ]; then
+        printf '%s' "$GITHUB_TOKEN"
+    elif [ -n "$GH_TOKEN" ]; then
+        printf '%s' "$GH_TOKEN"
+    elif command -v gh >/dev/null 2>&1; then
+        gh auth token 2>/dev/null
+    fi
+}
+
+lbt_fetch_release() {
+    local repo="$1" dest="$2"
+    if [ -z "$repo" ] || [ -z "$dest" ]; then
+        echo >&2 "lbt_fetch_release: usage: lbt_fetch_release <owner/repo> <dest_dir>"
+        return 2
+    fi
+
+    local api="https://api.github.com/repos/${repo}/releases/latest"
+    local token; token="$(lbt__github_token)"
+    local -a auth=()
+    [ -n "$token" ] && auth=(-H "Authorization: Bearer ${token}")
+
+    local meta
+    meta="$(curl -fsSL "${auth[@]}" -H "Accept: application/vnd.github+json" "$api")" || {
+        echo >&2 "linux-bash-tweaks: could not query ${repo} releases (auth or network)."
+        return 1
+    }
+
+    local latest
+    latest="$(printf '%s' "$meta" | grep -oP '"tag_name":\s*"\K[^"]+' | head -n1)"
+    if [ -z "$latest" ]; then
+        echo >&2 "linux-bash-tweaks: ${repo} has no published release yet."
+        return 1
+    fi
+
+    local current=""
+    [ -f "${dest}/version" ] && current="$(cat "${dest}/version" 2>/dev/null)"
+    [ "$latest" = "$current" ] && return 0
+
+    local tarball
+    tarball="$(printf '%s' "$meta" | grep -oP '"tarball_url":\s*"\K[^"]+' | head -n1)"
+    if [ -z "$tarball" ]; then
+        echo >&2 "linux-bash-tweaks: no tarball_url in ${repo} release ${latest}."
+        return 1
+    fi
+
+    mkdir -p "$dest" || return 1
+
+    local tmp
+    tmp="$(mktemp "${TMPDIR:-/tmp}/lbt-release.XXXXXX.tar.gz")" || return 1
+    # curl -L drops the Authorization header on the cross-host redirect to
+    # codeload.github.com -- that's fine, the redirect URL carries its own
+    # short-lived signed token.
+    if ! curl -fsSL "${auth[@]}" "$tarball" -o "$tmp"; then
+        echo >&2 "linux-bash-tweaks: failed to download ${repo} ${latest}."
+        rm -f "$tmp"
+        return 1
+    fi
+
+    if ! tar xzf "$tmp" --strip-components=1 -C "$dest"; then
+        echo >&2 "linux-bash-tweaks: failed to extract ${repo} ${latest}."
+        rm -f "$tmp"
+        return 1
+    fi
+    rm -f "$tmp"
+
+    printf '%s\n' "$latest" > "${dest}/version"
+    echo "linux-bash-tweaks: updated ${repo} to ${latest}"
+}
+
+lbt_dotfiles_setup() {
+    local cfg_dir="${LBT_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/linux-bash-tweaks}"
+    local cfg="${cfg_dir}/config"
+    local repo="${LBT_DOTFILES_REPO:-flyguy62n/dotfiles}"
+
+    if [ -n "$(lbt__github_token)" ]; then
+        echo "linux-bash-tweaks: dotfiles sync already configured."
+        return 0
+    fi
+
+    local pat
+    read -rsp "Fine-grained PAT for ${repo} (Contents: read-only; blank to skip): " pat
+    echo
+    if [ -z "$pat" ]; then
+        echo "linux-bash-tweaks: skipped; run 'lbt_dotfiles_setup' later to enable."
+        return 0
+    fi
+
+    # Validate against the repo endpoint (200 for any repo the token can see);
+    # releases/latest would 404 before the first release even with a good token.
+    if ! curl -fsI -o /dev/null \
+            -H "Authorization: Bearer ${pat}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${repo}"; then
+        echo >&2 "linux-bash-tweaks: that token can't read ${repo}; nothing saved."
+        return 1
+    fi
+
+    mkdir -p "$cfg_dir"
+    local tmp; tmp="$(mktemp)" || return 1
+    [ -f "$cfg" ] && grep -vE '^(LBT_DOTFILES_REPO|LBT_DOTFILES_TOKEN)=' "$cfg" > "$tmp"
+    {
+        printf 'LBT_DOTFILES_REPO=%s\n' "$repo"
+        printf 'LBT_DOTFILES_TOKEN=%s\n' "$pat"
+    } >> "$tmp"
+    ( umask 077; cat "$tmp" > "$cfg" )
+    chmod 600 "$cfg"
+    rm -f "$tmp"
+    echo "linux-bash-tweaks: saved to ${cfg}. Open a new shell to activate."
+}

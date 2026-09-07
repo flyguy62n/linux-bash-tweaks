@@ -77,6 +77,38 @@ mkdir ${tools_dir}
 cd ${tools_dir}
 git clone https://github.com/drwetter/testssl.sh
 
+# Maintainer-only: capture the fine-grained PAT that lets the dotfiles daily
+# task (shipped in the release) reach the private dotfiles repo. Silent no-op
+# for everyone else and on machines that already have a token saved. This runs
+# standalone before the repo is extracted, so it can't call lbt_dotfiles_setup;
+# it mirrors that helper minus the live validation.
+if [ "$(id -un)" = "randy" ]; then
+    lbt_config_file="${lbt_config_dir}/config"
+    if grep -qsE '^LBT_DOTFILES_TOKEN=.+' "$lbt_config_file"; then
+        echo "Dotfiles sync already has a token in ${lbt_config_file}. Skipping."
+    else
+        read -rsp "Fine-grained PAT for flyguy62n/dotfiles (Contents: read-only; blank to skip): " lbt_pat
+        echo
+        if [ -n "$lbt_pat" ]; then
+            lbt_tmp="$(mktemp)"
+            [ -f "$lbt_config_file" ] && \
+                grep -vE '^(LBT_DOTFILES_REPO|LBT_DOTFILES_TOKEN)=' "$lbt_config_file" > "$lbt_tmp"
+            {
+                echo "LBT_DOTFILES_REPO=flyguy62n/dotfiles"
+                echo "LBT_DOTFILES_TOKEN=${lbt_pat}"
+            } >> "$lbt_tmp"
+            ( umask 077; cat "$lbt_tmp" > "$lbt_config_file" )
+            chmod 600 "$lbt_config_file"
+            rm -f "$lbt_tmp"
+            echo "Saved dotfiles PAT to ${lbt_config_file}."
+        else
+            echo "Skipped. Run 'lbt_dotfiles_setup' later to enable dotfiles sync."
+        fi
+        unset lbt_pat lbt_tmp
+    fi
+    unset lbt_config_file
+fi
+
 ############################################
 ######## INSTALL ADDITIONAL STUFF ##########
 ############################################
